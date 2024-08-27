@@ -109,7 +109,7 @@ func (ui *Splash) IsClosed() bool {
 }
 
 // Declare selectedButton at package level (to be accessible from both files)
-var selectedButton int
+// var selectedButton int
 
 func (ui *Splash) render() {
 	if ui.Closed {
@@ -122,13 +122,13 @@ func (ui *Splash) render() {
 	// fgColor, _ := hexToColor(ui.Config.FgColor)
 
 	// Print Logo
-	fmt.Println(ui.Logo)
+	// fmt.Println(ui.Logo)
 
 	// Print Message
-	fmt.Println(ui.Message)
+	// fmt.Println(ui.Message)
 
 	// Print Description
-	fmt.Println(ui.Desc)
+	// fmt.Println(ui.Desc)
 
 	// Print Progress
 	// progressBar := int(ui.Progress * 50)
