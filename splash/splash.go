@@ -1,231 +1,192 @@
-// Package splash contains routines to run Vinegar's splash window.
 package splash
 
 import (
-	"bytes"
-	_ "embed"
 	"errors"
-	"image"
-	_ "image/png"
-	"io"
-	"log"
+	"fmt"
 	"os"
-
-	"gioui.org/app"
-	"gioui.org/font/gofont"
-	"gioui.org/io/system"
-	"gioui.org/op"
-	"gioui.org/op/paint"
-	"gioui.org/text"
-	"gioui.org/unit"
-	"gioui.org/widget"
-	"gioui.org/widget/material"
+	"strconv"
+	"strings"
 )
-
-//go:embed vinegar.png
-var vinegarLogo []byte
 
 var ErrClosed = errors.New("window closed")
 
 type Config struct {
-	Enabled     bool   `toml:"enabled"`     // Determines if splash is shown or not
-	LogoPath    string `toml:"logo_path"`   // Logo file path used to load and render the logo
-	Style       string `toml:"style"`       // Style to use for the splash layout
-	BgColor     uint32 `toml:"background"`  // Foreground color
-	FgColor     uint32 `toml:"foreground"`  // Background color
-	CancelColor uint32 `toml:"cancel,red"`  // Background color for the Cancel button
-	AccentColor uint32 `toml:"accent"`      // Color for progress bar's track and ShowLog button
-	TrackColor  uint32 `toml:"track,gray1"` // Color for the progress bar's background
-	InfoColor   uint32 `toml:"info,gray2"`  // Foreground color for the text containing binary information
+	Enabled     bool   `toml:"enabled"`
+	LogoPath    string `toml:"logo_path"`
+	Style       string `toml:"style"`
+	BgColor     string `toml:"background"`
+	FgColor     string `toml:"foreground"`
+	CancelColor string `toml:"cancel,red"`
+	AccentColor string `toml:"accent"`
+	TrackColor  string `toml:"track,gray1"`
+	InfoColor   string `toml:"info,gray2"`
 }
 
 type Splash struct {
-	*app.Window
-
-	Theme  *material.Theme
-	Config *Config
-	Style
-	LogPath string
-
-	logo    *image.Image
-	message string
-	desc    string
-
-	progress float32
-	closed   bool
-
-	exitButton    *widget.Clickable
-	openLogButton *widget.Clickable
+	Config   *Config
+	Logo     string
+	Style    Style  // Added Style field
+	Message  string // Added Message field
+	Desc     string
+	Progress float32 // Added Progress field
+	Closed   bool // Changed to Closed (capital C)
+	LogPath  string // Added LogPath field
 }
 
-func (ui *Splash) SetMessage(msg string) {
-	if ui.Window == nil {
-		return
+func hexToColor(hex string) (string, error) {
+	if len(hex) != 7 || hex[0] != '#' {
+		return "", errors.New("invalid color format")
 	}
-
-	ui.message = msg
-	ui.Invalidate()
-}
-
-func (ui *Splash) SetDesc(desc string) {
-	if ui.Window == nil {
-		return
+	r, err := strconv.ParseUint(hex[1:3], 16, 8)
+	if err != nil {
+		return "", err
 	}
-
-	ui.desc = desc
-	ui.Invalidate()
-}
-
-func (ui *Splash) SetProgress(progress float32) {
-	if ui.Window == nil {
-		return
+	g, err := strconv.ParseUint(hex[3:5], 16, 8)
+	if err != nil {
+		return "", err
 	}
-
-	ui.progress = progress
-	ui.Invalidate()
-}
-
-func (ui *Splash) Close() {
-	if ui.Window == nil {
-		return
+	b, err := strconv.ParseUint(hex[5:7], 16, 8)
+	if err != nil {
+		return "", err
 	}
-
-	ui.closed = true
-	ui.Perform(system.ActionClose)
-}
-
-func (ui *Splash) IsClosed() bool {
-	return ui.closed
-}
-
-func window(width, height unit.Dp) *app.Window {
-	w := new(app.Window)
-	w.Option(
-		app.Decorated(false),
-		app.Size(width, height),
-		app.MinSize(width, height),
-		app.MaxSize(width, height),
-		app.Title("Vinegar"),
-	)
-	return w
+	return fmt.Sprintf("\033[48;2;%d;%d;%dm", r, g, b), nil
 }
 
 func New(cfg *Config) *Splash {
 	if !cfg.Enabled {
 		return &Splash{
-			closed: true,
+			Closed: true,
 			Config: cfg,
 		}
 	}
 
-	s := Compact
+	logo := "[Logo Placeholder]"
 
-	if cfg.Style == "familiar" {
-		s = Familiar
+	if cfg.LogoPath != "" {
+		if data, err := os.ReadFile(cfg.LogoPath); err == nil {
+			logo = string(data)
+		}
 	}
-
-	w := window(s.Size())
-
-	th := material.NewTheme()
-	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
-	th.Palette = material.Palette{
-		Bg:         rgb(cfg.BgColor),
-		Fg:         rgb(cfg.FgColor),
-		ContrastBg: rgb(cfg.AccentColor),
-		ContrastFg: rgb(cfg.InfoColor),
-	}
-
-	eb := new(widget.Clickable)
-	olb := new(widget.Clickable)
 
 	return &Splash{
-		Theme:         th,
-		Style:         s,
-		Config:        cfg,
-		Window:        w,
-		exitButton:    eb,
-		openLogButton: olb,
+		Config:  cfg,
+		Logo:    logo,
+		Closed:  false,
 	}
 }
 
-func (ui *Splash) loadLogo() error {
-	var r io.Reader
+func (ui *Splash) SetMessage(msg string) {
+	if ui.Closed {
+		return
+	}
+	ui.Message = msg
+	ui.render()
+}
 
-	if ui.Config.LogoPath != "" {
-		lf, err := os.Open(ui.Config.LogoPath)
-		if err != nil {
-			return err
+func (ui *Splash) SetDesc(desc string) {
+	if ui.Closed {
+		return
+	}
+	ui.Desc = desc
+	ui.render()
+}
+
+func (ui *Splash) SetProgress(progress float32) {
+	if ui.Closed {
+		return
+	}
+	ui.Progress = progress
+	ui.render()
+}
+
+func (ui *Splash) Close() {
+	if ui.Closed {
+		return
+	}
+	ui.Closed = true
+	ui.render()
+}
+
+func (ui *Splash) IsClosed() bool {
+	return ui.Closed
+}
+
+// Declare selectedButton at package level (to be accessible from both files)
+var selectedButton int
+
+func (ui *Splash) render() {
+	if ui.Closed {
+		return
+	}
+
+	fmt.Printf("\033[H\033[2J") // Clear screen
+
+	bgColor, _ := hexToColor(ui.Config.BgColor)
+	fgColor, _ := hexToColor(ui.Config.FgColor)
+
+	// Print Logo
+	fmt.Println(bgColor + ui.Logo + "\033[0m")
+
+	// Print Message
+	fmt.Println(fgColor + ui.Message + "\033[0m")
+
+	// Print Description
+	fmt.Println(fgColor + ui.Desc + "\033[0m")
+
+	// Print Progress
+	progressBar := int(ui.Progress * 50)
+	fmt.Printf("Progress: [%s%s] %.0f%%\n", strings.Repeat("=", progressBar), strings.Repeat(" ", 50-progressBar), ui.Progress*100)
+
+	// Call drawButtons function to handle button input
+	ui.drawButtons()
+
+	// Handle user input based on selectedButton
+	switch selectedButton {
+	case 1: // Show logs
+		if ui.LogPath != "" {
+			// Open the log file
 		}
-		defer lf.Close()
-		r = lf
-	} else {
-		r = bytes.NewReader(vinegarLogo)
+		selectedButton = 0 // Reset selectedButton
+	case 2: // Cancel
+		ui.Close()
+		selectedButton = 0 // Reset selectedButton
+		// ... (other cases)
 	}
-
-	logo, _, err := image.Decode(r)
-	if err != nil {
-		return err
-	}
-
-	ui.logo = &logo
-	return nil
 }
 
+// Display the terminal-based splash screen (new function)
+func (ui *Splash) Display() {
+	// Clear the screen
+	fmt.Printf("\033[H\033[2J")
+
+	for !ui.IsClosed() {
+		ui.render()
+	}
+}
+
+// Run (kept for compatibility) - now calls Display
 func (ui *Splash) Run() error {
-	if ui.closed {
+	if ui.Closed { // Changed to Closed (capital C)
 		return nil
 	}
 
-	drawfn := ui.drawCompact
+	ui.Display() // Call Display to handle the terminal-based splash
 
-	if err := ui.loadLogo(); err != nil {
-		log.Println("Failed to load logo:", err)
+	return nil // Or return an error if needed
+}
+
+func main() {
+	cfg := &Config{
+		Enabled: true,
+		LogoPath: "logo.txt",
+		BgColor: "#000000", // Default black background
+		FgColor: "#FFFFFF", // Default white foreground
 	}
+	splash := New(cfg)
+	splash.SetMessage("Welcome to Vinegar")
+	splash.SetDesc("Loading...")
+	splash.SetProgress(0.5)
 
-	defer func() {
-		ui.closed = true
-	}()
-
-	if ui.Style == Familiar {
-		drawfn = ui.drawFamiliar
-	}
-
-	ui.closed = false
-	post := false
-	var ops op.Ops
-	for {
-		switch e := ui.Event().(type) {
-		case app.DestroyEvent:
-			if ui.closed && e.Err == nil {
-				return nil
-			} else if e.Err == nil {
-				return ErrClosed
-			} else {
-				return e.Err
-			}
-		case app.FrameEvent:
-			gtx := app.NewContext(&ops, e)
-			paint.Fill(gtx.Ops, ui.Theme.Palette.Bg)
-
-			if !post {
-				ui.Perform(system.ActionCenter)
-			}
-
-			if ui.openLogButton.Clicked(gtx) {
-				log.Printf("Opening log file: %s", ui.LogPath)
-				err := XDGOpen(ui.LogPath).Start()
-				if err != nil {
-					return err
-				}
-			}
-
-			if ui.exitButton.Clicked(gtx) {
-				ui.Perform(system.ActionClose)
-			}
-
-			drawfn(gtx)
-
-			e.Frame(gtx.Ops)
-		}
-	}
+	// Start the splash screen
+	splash.Run()
 }

@@ -117,12 +117,12 @@ func Default() Config {
 		Splash: splash.Config{
 			Enabled:     true,
 			LogoPath:    LogoPath,
-			BgColor:     0x242424,
-			FgColor:     0xfafafa,
-			CancelColor: 0xbc3c3c,
-			TrackColor:  0x303030,
-			AccentColor: 0x8fbc5e,
-			InfoColor:   0x777777,
+		        BgColor:     "#242424", // Correct hexadecimal color string
+    			FgColor:     "#fafafa", // Correct hexadecimal color string
+    			CancelColor: "#bc3c3c", // Correct hexadecimal color string
+    			TrackColor:  "#303030", // Correct hexadecimal color string
+    			AccentColor: "#8fbc5e", // Correct hexadecimal color string
+    			InfoColor:   "#777777", // Correct hexadecimal color string		
 		},
 	}
 }

@@ -1,13 +1,12 @@
 package splash
 
 import (
-	_ "image/png"
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
 
 	"gioui.org/layout"
-	"gioui.org/op/paint"
-	"gioui.org/unit"
-	"gioui.org/widget"
-	"gioui.org/widget/material"
 )
 
 type (
@@ -15,52 +14,39 @@ type (
 	D = layout.Dimensions
 )
 
-func (ui *Splash) drawLogo() *widget.Image {
-	if ui.logo == nil {
-		return &widget.Image{}
+// The declaration of selectedButton is now in splash.go
+// var selectedButton int
+
+func (ui *Splash) drawLogo() string {
+	return ui.Logo
+}
+
+func (ui *Splash) drawButtons() {
+	// Styling for buttons (optional, using ANSI escape codes)
+	bgColor, _ := hexToColor("#000000") // Black background
+	fgColor, _ := hexToColor("#FFFFFF") // White foreground
+
+	if ui.LogPath != "" {
+		fmt.Printf("%s[%s]%s\n", bgColor, "1. Show logs", fgColor)
 	}
+	fmt.Printf("%s[%s]%s\n", bgColor, "2. Cancel", fgColor)
 
-	return &widget.Image{Src: paint.NewImageOp(*ui.logo)}
-}
+	// Read user input
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
 
-func (ui *Splash) drawButtons(gtx C, s layout.Spacing) D {
-	return layout.Flex{
-		Axis:    layout.Horizontal,
-		Spacing: s,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			if ui.LogPath == "" {
-				return D{}
-			}
-
-			btn := button(ui.Theme, ui.openLogButton, "Show logs")
-			return layout.Inset{Right: unit.Dp(16)}.Layout(gtx, func(gtx C) D {
-				return btn.Layout(gtx)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			btn := button(ui.Theme, ui.exitButton, "Cancel")
-			btn.Color = ui.Theme.Palette.Fg
-			btn.Background = rgb(ui.Config.CancelColor)
-			return btn.Layout(gtx)
-		}),
-	)
-}
-
-func (ui *Splash) drawDesc(gtx C) D {
-	d := material.Caption(ui.Theme, ui.desc)
-	d.Font.Typeface = "go mono, monospace"
-	d.Color = rgb(ui.Config.InfoColor)
-	return d.Layout(gtx)
-}
-
-func button(th *material.Theme, b *widget.Clickable, txt string) (bs material.ButtonStyle) {
-	bs = material.Button(th, b, txt)
-	bs.Inset = layout.Inset{
-		Top: unit.Dp(10), Bottom: unit.Dp(10),
-		Left: unit.Dp(16), Right: unit.Dp(16),
+	// Determine the selected button based on input
+	switch input {
+	case "1":
+		selectedButton = 1 // Show logs
+	case "2":
+		selectedButton = 2 // Cancel
+	default:
+		fmt.Println("Invalid option.")
 	}
-	bs.Color = th.Palette.Fg
-	bs.CornerRadius = 6
-	return
+}
+
+func (ui *Splash) drawDesc() string {
+	return ui.Desc
 }

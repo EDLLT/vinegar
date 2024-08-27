@@ -1,9 +1,8 @@
 package splash
 
 import (
-	"gioui.org/layout"
-	"gioui.org/unit"
-	"gioui.org/widget/material"
+	"fmt"
+	"strings"
 )
 
 type Style int
@@ -13,103 +12,60 @@ const (
 	Familiar
 )
 
-func (s Style) Size() (w, h unit.Dp) {
+func (s Style) Size() (w, h int) {
 	switch s {
 	case Compact:
-		w = unit.Dp(448)
-		h = unit.Dp(150) // 118, 0
+		w = 50
+		h = 10
 	case Familiar:
-		w = unit.Dp(480)
-		h = unit.Dp(246) // 198
+		w = 60
+		h = 20
 	}
-
 	return
 }
 
-func (ui *Splash) drawCompact(gtx C) D {
-	return layout.Inset{
-		Top:    unit.Dp(16),
-		Bottom: unit.Dp(16),
-		Left:   unit.Dp(16),
-		Right:  unit.Dp(16),
-	}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{
-			Axis: layout.Vertical,
-		}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Flex{
-					Axis:      layout.Horizontal,
-					Alignment: layout.Start,
-				}.Layout(gtx,
-					layout.Rigid(ui.drawLogo().Layout),
-					layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
-					layout.Rigid(func(gtx C) D {
-						return layout.Flex{
-							Axis:      layout.Vertical,
-							Alignment: layout.Start,
-						}.Layout(gtx,
-							layout.Rigid(material.Label(ui.Theme, unit.Sp(16), ui.message).Layout),
-							layout.Rigid(layout.Spacer{Height: unit.Dp(2)}.Layout),
-							layout.Rigid(func(gtx C) D {
-								return ui.drawDesc(gtx)
-							}),
-							layout.Rigid(layout.Spacer{Height: unit.Dp(20)}.Layout),
-							layout.Rigid(func(gtx C) D {
-								pb := material.ProgressBar(ui.Theme, ui.progress)
-								pb.Height = unit.Dp(6)
-								pb.Radius = unit.Dp(4)
-								pb.TrackColor = rgb(ui.Config.TrackColor)
-								return pb.Layout(gtx)
-							}),
-						)
-					}),
-				)
-			}),
-			layout.Rigid(layout.Spacer{Height: unit.Dp(18)}.Layout),
-			layout.Rigid(func(gtx C) D {
-				return ui.drawButtons(gtx, layout.SpaceStart)
-			}),
-		)
-	})
+func (ui *Splash) drawCompact() {
+	width, _ := ui.Style.Size() // Removed unused height
+	clearScreen := "\033[H\033[2J"
+	fmt.Print(clearScreen)
+
+	fmt.Println(strings.Repeat("=", width))
+	fmt.Printf("Logo: %s\n", ui.drawLogo())
+	fmt.Printf("Message: %s\n", ui.Message)
+	fmt.Printf("Description: %s\n", ui.drawDesc())
+	progressBar := ui.drawProgressBar()
+	fmt.Printf("Progress: %s\n", progressBar)
+	fmt.Println(strings.Repeat("=", width))
+	ui.drawButtons()
 }
 
-func (ui *Splash) drawFamiliar(gtx C) D {
-	return layout.Center.Layout(gtx, func(gtx C) D {
-		return layout.Flex{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		}.Layout(gtx,
-			layout.Rigid(ui.drawLogo().Layout),
-			layout.Rigid(func(gtx C) D {
-				return layout.Flex{
-					Axis:      layout.Vertical,
-					Alignment: layout.Middle,
-				}.Layout(gtx,
-					layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
-					layout.Rigid(material.Label(ui.Theme, unit.Sp(16), ui.message).Layout),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Top:    unit.Dp(16),
-							Bottom: unit.Dp(16),
-							Left:   unit.Dp(32),
-							Right:  unit.Dp(32),
-						}.Layout(gtx, func(gtx C) D {
-							pb := material.ProgressBar(ui.Theme, ui.progress)
-							pb.Height = unit.Dp(6)
-							pb.Radius = unit.Dp(4)
-							pb.TrackColor = rgb(ui.Config.TrackColor)
-							return pb.Layout(gtx)
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return ui.drawDesc(gtx)
-					}),
-					layout.Rigid(layout.Spacer{Height: unit.Dp(16)}.Layout),
-				)
-			}),
-			layout.Rigid(func(gtx C) D {
-				return ui.drawButtons(gtx, layout.SpaceAround)
-			}),
-		)
-	})
+func (ui *Splash) drawFamiliar() {
+	width, _ := ui.Style.Size() // Removed unused height
+	clearScreen := "\033[H\033[2J"
+	fmt.Print(clearScreen)
+
+	fmt.Println(strings.Repeat("=", width))
+	fmt.Printf("Logo: %s\n", ui.drawLogo())
+	fmt.Printf("Message: %s\n", ui.Message)
+	fmt.Printf("Description: %s\n", ui.drawDesc())
+	progressBar := ui.drawProgressBar()
+	fmt.Printf("Progress: %s\n", progressBar)
+	fmt.Println(strings.Repeat("=", width))
+	ui.drawButtons()
 }
+
+func (ui *Splash) drawProgressBar() string {
+	total := 20
+	completed := int(ui.Progress * float32(total))
+	bar := fmt.Sprintf("[%s%s]", strings.Repeat("#", completed), strings.Repeat("-", total-completed))
+	return bar
+}
+
+// These functions are now in widgets.go:
+// func (ui *Splash) drawLogo() string {
+// 	return "LOGO"
+// }
+// 
+// func (ui *Splash) drawDesc() string {
+// 	return "Description here"
+// }
