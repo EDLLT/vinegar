@@ -1,6 +1,6 @@
 VERSION = v1.7.5
 
-PREFIX     = /usr
+PREFIX     = /data/data/com.termux/files/usr
 APPPREFIX  = $(PREFIX)/share/applications
 ICONPREFIX = $(PREFIX)/share/icons/hicolor
 
