@@ -218,9 +218,10 @@ func (b *Binary) Init() error {
 			return err
 		}
 
-		if err := b.InstallWebView(); err != nil {
-			return fmt.Errorf("webview: %w", err)
-		}
+		b.InstallWebView() // Doesn't actually install webview, just sets our wineprefix to windows 7
+		// if err := b.InstallWebView(); err != nil {
+		// 	return fmt.Errorf("webview: %w", err)
+		// }
 	}
 
 	return nil

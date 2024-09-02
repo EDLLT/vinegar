@@ -29,24 +29,25 @@ func (b *Binary) InstallWebView() error {
 	if err := b.Prefix.Wine("winecfg", "/v", "win7").Run(); err != nil {
 		return err
 	}
+	slog.Info("Skipping WebView installation(Couldn't manage to get it to work in Termux, use termux's firefox instead)")
+	// b.Splash.SetDesc("109.0.1518.140")
 
-	b.Splash.SetDesc("109.0.1518.140")
+	// if _, err := os.Stat(WebViewInstallerPath); err != nil {
+	// 	if err := b.DownloadWebView(); err != nil {
+	// 		return err
+	// 	}
+	// } else if err == nil {
+	// 	slog.Info("WebView installer cached, skipping download", "path", WebViewInstallerPath)
+	// }
 
-	if _, err := os.Stat(WebViewInstallerPath); err != nil {
-		if err := b.DownloadWebView(); err != nil {
-			return err
-		}
-	} else if err == nil {
-		slog.Info("WebView installer cached, skipping download", "path", WebViewInstallerPath)
-	}
+	// b.Splash.SetMessage("Installing WebView")
+	// b.Splash.SetProgress(1.0)
+	// slog.Info("Running WebView installer", "path", WebViewInstallerPath)
 
-	b.Splash.SetMessage("Installing WebView")
-	b.Splash.SetProgress(1.0)
-	slog.Info("Running WebView installer", "path", WebViewInstallerPath)
-
-	return b.Prefix.Wine(WebViewInstallerPath,
-		"--msedgewebview", "--do-not-launch-msedge", "--system-level",
-	).Run()
+	// return b.Prefix.Wine(WebViewInstallerPath,
+	// 	"--msedgewebview", "--do-not-launch-msedge", "--system-level",
+	// ).Run()
+	return nil
 }
 
 func (b *Binary) DownloadWebView() error {
