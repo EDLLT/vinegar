@@ -75,9 +75,10 @@ func (b *Binary) Setup() error {
 		return fmt.Errorf("apply fflags: %w", err)
 	}
 
-	if err := b.SetupDxvk(); err != nil {
-		return fmt.Errorf("setup dxvk %s: %w", b.Config.DxvkVersion, err)
-	}
+	slog.Info("Skipping SetupDxvk, if you want to use dxvk please do so using mobox for now")
+	// if err := b.SetupDxvk(); err != nil {
+	// 	return fmt.Errorf("setup dxvk %s: %w", b.Config.DxvkVersion, err)
+	// }
 
 	b.Splash.SetProgress(1.0)
 	if err := b.GlobalState.Save(); err != nil {
@@ -234,6 +235,7 @@ func (b *Binary) SetupDxvk() error {
 	b.Splash.SetProgress(0.0)
 	dxvk.Setenv()
 
+	// Checks whether if current dxvk version matches the one we set in config then ends the function if that's true
 	if b.Config.DxvkVersion == b.State.DxvkVersion {
 		slog.Info("DXVK up to date!", "version", b.State.DxvkVersion)
 		return nil
